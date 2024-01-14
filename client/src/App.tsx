@@ -1,13 +1,22 @@
 import { Box, Container, Flex, Heading } from "@radix-ui/themes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import List from "./components/List";
 
 function App() {
+  const [ping, setPing] = useState<string[]>([]);
+  const [pong, setPong] = useState<string[]>([]);
+
   useEffect(() => {
     const sse = new EventSource("http://localhost:3000/sse");
-    console.log("sse :>> ", sse);
 
-    sse.onmessage = (e) => console.log(e?.data);
+    sse.addEventListener("ping", (e) => {
+      setPing((prev) => [...prev, e.data]);
+    });
+    sse.addEventListener("pong", (e) => {
+      setPong((prev) => [...prev, e.data]);
+    });
+
+    sse.onmessage = (e) => console.log(e);
     sse.onerror = (error) => {
       console.log("ERROR", error);
 
@@ -28,9 +37,10 @@ function App() {
             </Heading>
           </Flex>
         </Box>
+
         <Flex justify="between">
-          <List title="Ping" />
-          <List title="Pong" />
+          <List title="Ping" data={ping} />
+          <List title="Pong" data={pong} />
         </Flex>
       </Container>
     </Box>

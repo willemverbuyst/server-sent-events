@@ -20,7 +20,7 @@ server.get("/sse", async (request, reply) => {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  res.write("data: server connected!\n\n");
+  res.write("data: Server connected!\n\n");
 
   const clientId = request.id;
   const newClient = {
@@ -30,9 +30,10 @@ server.get("/sse", async (request, reply) => {
   clients.push(newClient);
 
   const intervalId = setInterval(() => {
-    res.write(
-      `data: ${["Ping", "Pong"][Math.floor(Math.random() * 2)]} ${Date.now()}\n\n`,
-    );
+    const event = ["ping", "pong"][Math.floor(Math.random() * 2)];
+
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${Date.now()}\n\n`);
   }, 3000);
 
   request.raw.on("close", () => {
