@@ -18,13 +18,5 @@ const corsOptions = {
 server.register(cors, corsOptions);
 
 server.get("/", async function handler() {
-  return { msg: "root" };
-});
-
-server.get("/ping", async function handler() {
-  return { msg: Date.now() };
-});
-
-server.get("/pong", async function handler() {
-  return { msg: Date.now() };
+  return { msg: "server was called on root" };
 });
