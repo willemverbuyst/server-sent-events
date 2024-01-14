@@ -11,6 +11,7 @@
   "author": "Willem Verbuyst",
   "license": "ISC",
   "dependencies": {
+    "@fastify/cors": "^8.5.0",
     "fastify": "^4.25.2"
   },
   "devDependencies": {
