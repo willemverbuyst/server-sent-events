@@ -1,19 +1,33 @@
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
-import { useEffect, useState } from "react";
-import List from "./components/List";
+import * as Toast from "@radix-ui/react-toast";
+import { Box, Container, Heading } from "@radix-ui/themes";
+import { useEffect, useRef, useState } from "react";
+import "./styles.css";
 
 function App() {
-  const [ping, setPing] = useState<string[]>([]);
-  const [pong, setPong] = useState<string[]>([]);
+  const [msg, setMsg] = useState<{ title: string; timeStamp: string } | null>(
+    null
+  );
+  const [open, setOpen] = useState(false);
+  const eventDateRef = useRef(new Date());
+
+  function getFormattedDate(d: string) {
+    const date = new Date(Number(d));
+    const readableDate = date.toLocaleDateString();
+    const readableTime = date.toLocaleTimeString();
+
+    return `${readableDate} ${readableTime}`;
+  }
 
   useEffect(() => {
     const sse = new EventSource("http://localhost:3000/sse");
 
     sse.addEventListener("ping", (e) => {
-      setPing((prev) => [...prev, e.data]);
+      setMsg({ title: "PING", timeStamp: e.data });
+      setOpen(true);
     });
     sse.addEventListener("pong", (e) => {
-      setPong((prev) => [...prev, e.data]);
+      setMsg({ title: "PONG", timeStamp: e.data });
+      setOpen(true);
     });
 
     sse.onmessage = (e) => console.log(e);
@@ -28,22 +42,33 @@ function App() {
   }, []);
 
   return (
-    <Box>
-      <Container size="2">
-        <Box p="6">
-          <Flex justify="between">
+    <Toast.Provider swipeDirection="right">
+      <Box>
+        <Container size="2">
+          <Box p="6">
             <Heading as="h1" size="7" align="center">
               Server-Sent Events
             </Heading>
-          </Flex>
-        </Box>
-
-        <Flex justify="between">
-          <List title="Ping" data={ping} />
-          <List title="Pong" data={pong} />
-        </Flex>
-      </Container>
-    </Box>
+          </Box>
+        </Container>
+      </Box>
+      <Toast.Root className="ToastRoot" open={open} onOpenChange={setOpen}>
+        {msg && (
+          <>
+            <Toast.Title className="ToastTitle">{msg.title}</Toast.Title>
+            <Toast.Description asChild>
+              <time
+                className="ToastDescription"
+                dateTime={eventDateRef.current.toISOString()}
+              >
+                {getFormattedDate(msg?.timeStamp)}
+              </time>
+            </Toast.Description>
+          </>
+        )}
+      </Toast.Root>
+      <Toast.Viewport className="ToastViewport" />
+    </Toast.Provider>
   );
 }
 
