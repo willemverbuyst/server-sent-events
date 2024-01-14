@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
-import fastify, { FastifyRequest } from "fastify";
-import { FastifyReply } from "fastify/types/reply";
+import fastify from "fastify";
+import { IncomingMessage, ServerResponse } from "http";
 import pino from "pino";
 import pretty from "pino-pretty";
 
@@ -8,60 +8,40 @@ export const server = fastify({
   logger: pino(pretty()),
 });
 
-const corsOptions = {
-  origin: "*",
-  // methods: "OPTION,GET,HEAD,PUT,PATCH,DELTE",
-  // preflightContinue: false,
-  // optionsSuccessStatus: 204,
-  // exposedHeaders: "Authorization",
-};
+await server.register(cors, { origin: "*", methods: ["GET", "POST"] });
 
-await server.register(cors, { origin: "*", methods: "GET" });
+let clients: { id: string; response: ServerResponse<IncomingMessage> }[] = [];
 
-let clients: { id: string; response: FastifyReply }[] = [];
+server.get("/sse", async (request, reply) => {
+  const res = reply.raw;
 
-function listenEvent() {
-  const interval = setInterval(() => {
-    clients.forEach((client) => {
-      client.response.raw.write(JSON.stringify({ txt: new Date() }));
-    });
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
-    if (clients.length === 0) {
-      clearInterval(interval);
-    }
-  }, 1000);
-}
+  res.write("data: server connected!\n\n");
 
-function eventsHandler(req: FastifyRequest, reply: FastifyReply) {
-  const headers = {
-    "Content-Type": "text/event-stream",
-    Connection: "keep-alive",
-    "Cache-control": "no-cache",
-    // "Access-Control-Allow-Origin": "*",
-  };
-
-  reply.raw.writeHead(200, headers);
-  reply.raw.write(JSON.stringify({ txt: new Date() }));
-
-  const clientId = req.id;
-
+  const clientId = request.id;
   const newClient = {
     id: clientId,
-    response: reply,
+    response: res,
   };
-
   clients.push(newClient);
 
-  listenEvent();
+  const intervalId = setInterval(() => {
+    res.write(
+      `data: ${["Ping", "Pong"][Math.floor(Math.random() * 2)]} ${Date.now()}\n\n`,
+    );
+  }, 3000);
 
-  req.raw.on("close", () => {
+  request.raw.on("close", () => {
     console.log(`${clientId} connection closed`);
+    clearInterval(intervalId);
     clients = clients.filter((client) => client.id !== clientId);
   });
-}
+});
 
-server.get("/sse", eventsHandler);
-
-server.get("/", async function handler() {
+server.get("/", async function handler(req, reply) {
   return { msg: "server was called on root" };
 });
