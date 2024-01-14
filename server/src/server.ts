@@ -11,9 +11,9 @@ server.get("/", async function handler() {
 });
 
 server.get("/ping", async function handler() {
-  return { msg: "ping" };
+  return { msg: Date.now() };
 });
 
 server.get("/pong", async function handler() {
-  return { msg: "pong" };
+  return { msg: Date.now() };
 });
